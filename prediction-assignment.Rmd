@@ -1,0 +1,94 @@
+---
+title: "Prediction Assignment"
+author: "Maisoon"
+date: "December 6, 2020"
+output: html_document
+---
+## Sypnosis
+In this report we predict the manner in which 6 participants did belt, forearm, arm, and dumbell exercises by using the data measured from accelerometers. This is the "classe" variable in the training set. We use the random forest approach which was very efficient for the prediction.
+
+## Data Processing and Exploration
+First we download the training and testing data
+```{r}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "./training")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "./testing")
+```
+we read the csv files
+```{r}
+training=read.csv("training")
+testing=read.csv("testing")
+```
+We look at the names of the variables in the training set
+```{r}
+names(training)
+```
+Some variables in the training and testing sets contain many missing values and some are not useful for the prediction like the names of the participants, the time, new_window and the X variable, so we ged rid of these variables
+```{r}
+train=training[,c(8:11,37:49,60:68,84:86,102,113:124,140,151:160)]
+test=testing[,c(8:11,37:49,60:68,84:86,102,113:124,140,151:160)]
+```
+We look at the structure of the variables in the training set
+```{r}
+str(train)
+```
+Since classe variable is a character vector, we change it to a factor variable to be able to do the prediction
+```{r}
+train$classe=factor(train$classe)
+head(train$classe)
+```
+We check if there are variables whose variance is near zero (not so variable) as these variables may be not imporatant for the prediction
+```{r}
+library(caret)
+table(nearZeroVar(train,saveMetrics = TRUE)$nzv)
+```
+Non of the variables have zero variance so we use all the variables in the training set for the prediction
+
+## Cross Validation
+We apply cross validation to the training set by dividing it into train and test set by using simple random method where 75% is for the training set and 25% is for the test set and we set the seed
+```{r}
+set.seed(3514)
+inTrain=createDataPartition(train$classe,p=0.75,list=FALSE)
+trainset=train[inTrain,]
+testset=train[-inTrain,]
+```
+
+## Random Forest
+First we preprocess the variables in the trainset by centering and scaling them to be able to apply random forest
+```{r}
+preProcess(trainset[,1:52],c("center","scale"))
+```
+We apply the random forest method for our prediction, so we fit the model first 
+```{r}
+library(randomForest)
+modfitrf=randomForest(classe~.,data=trainset)
+```
+We predict the values of the model on the testset and find the confusion matrix in order to find the accuracy of this prediction
+```{r}
+predrf=predict(modfitrf,newdata=testset)
+accuracy=confusionMatrix(predrf,testset$classe)
+accuracy
+```
+This prediction is 99.73% accurate which is very high
+
+### Expected Sample Error
+We calculate the sample error which in this case is interpreted as 1-accuracy since the accuracy gives the probability of the predictions that were predicted right in the test set, so the error which is the probability of the predictions that weren't predicted right is 1-accuracy
+```{r}
+error=1-accuracy$overall["Accuracy"]
+names(error)="error"
+error
+```
+The error is 0.2% which is very small so this shows again that our prediction is very accurate which is why the random forest model is so good for this prediction and there wasn't overfitting because the prediction was very accurate on the testset.
+
+## Prediction Quiz Portion
+In this part we want to predict our model on the test set that was downloaded at the begining, but the classe variable doesn't exist in this set
+```{r}
+test$classe
+```
+So, we create a classe variable in the test set and apply our prediction
+```{r}
+test$classe=c()
+predictrf=predict(modfitrf,newdata=test)
+predictrf
+```
+The predictions were very accurate
+
