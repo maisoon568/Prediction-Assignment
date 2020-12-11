@@ -29,7 +29,7 @@ test=testing[,c(8:11,37:49,60:68,84:86,102,113:124,140,151:160)]
 ```
 We look at the structure of the variables in the training set
 ```{r}
-str(train)
+str(train )
 ```
 Since classe variable is a character vector, we change it to a factor variable to be able to do the prediction
 ```{r}
